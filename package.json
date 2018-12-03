@@ -1,0 +1,21 @@
+{
+  "name": "bolton-contract",
+  "version": "0.1.0",
+  "description": "",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
+    "test": "truffle test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bignumber.js": "^8.0.1",
+    "ganache-cli": "^6.2.3",
+    "openzeppelin-solidity": "^2.0.0",
+    "truffle": "^4.1.14"
+  }
+}
