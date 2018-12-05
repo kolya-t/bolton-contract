@@ -3,13 +3,13 @@ pragma solidity ^0.4.24;
 import "./DepositPlan.sol";
 
 
-contract SilverDepositPlan is DepositPlan {
+contract GoldDepositPlan is DepositPlan {
   constructor(IERC20 _bfclToken)
     DepositPlan(
       _bfclToken,
-      15 days,
-      3,
-      10000000000000000000
+      365 days,
+      10,
+      500000000000000000000
     )
     public
   {
