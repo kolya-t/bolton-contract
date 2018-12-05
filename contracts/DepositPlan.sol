@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "./Whitelisted.sol";
 import "./Vault.sol";
 
 
-contract DepositPlan is Ownable, ReentrancyGuard {
+contract DepositPlan is Whitelisted, ReentrancyGuard {
   using SafeMath for uint;
 
   IERC20 public bfclToken;
@@ -47,7 +47,11 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     revert();
   }
 
-  function invest(uint _tokenAmount) external nonReentrant {
+  function invest(uint _tokenAmount)
+    external
+    nonReentrant
+    onlyIfWhitelisted
+  {
     address investor = msg.sender;
     Account storage account = accounts[investor];
 
@@ -66,7 +70,11 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     }
   }
 
-  function airdrop(address[] _investors) external onlyOwner nonReentrant {
+  function airdrop(address[] _investors)
+    external
+    onlyOwner
+    nonReentrant
+  {
     for (uint i = 0; i < _investors.length; i++) {
       address investor = _investors[i];
       _sendDividends(investor);
@@ -81,16 +89,34 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     delete accounts[investor];
   }
 
-  function getBalance() public view returns (uint) {
+  function getBalance()
+    public
+    view
+    returns (uint)
+  {
     return bfclToken.balanceOf(address(this));
   }
 
-  function calculateInvestorPayoutsForTime(address _investor, uint _timestamp) external view returns (uint) {
+  function calculateInvestorPayoutsForTime(
+    address _investor,
+    uint _timestamp
+  )
+    external
+    view
+    returns (uint)
+  {
     Account storage account = accounts[_investor];
     return _calculateAccountPayoutsForTime(account, _timestamp);
   }
 
-  function calculatePayoutsForTime(address[] _investors, uint _timestamp) external view returns (uint) {
+  function calculatePayoutsForTime(
+    address[] _investors,
+    uint _timestamp
+  )
+    external
+    view
+    returns (uint)
+  {
     uint payouts;
     for (uint i = 0; i < _investors.length; i++) {
       Account storage account = accounts[_investors[i]];
@@ -121,7 +147,14 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     }
   }
 
-  function _calculateAccountPayoutsForTime(Account storage _account, uint _timestamp) internal view returns (uint) {
+  function _calculateAccountPayoutsForTime(
+    Account storage _account,
+    uint _timestamp
+  )
+    internal
+    view
+    returns (uint)
+  {
     uint sec = _timestamp - _account.lastWithdrawTime;
     uint percentPerSecond = depositPercentPerDay * 1 days;
     uint dividends = _account.deposit.mul(sec).mul(percentPerSecond).div(10000);
