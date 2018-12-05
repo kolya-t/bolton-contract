@@ -3,14 +3,15 @@ pragma solidity ^0.4.24;
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Whitelisted.sol";
+import "./Whitelist.sol";
 import "./Vault.sol";
 
 
-contract DepositPlan is Whitelisted, ReentrancyGuard {
+contract DepositPlan is Ownable, ReentrancyGuard {
   using SafeMath for uint;
 
   IERC20 public bfclToken;
+  Whitelist public whitelist;
   uint public depositPercentPerDay;
   uint public minInvestment;
 
@@ -26,12 +27,19 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
 
   constructor(
     IERC20 _bfclToken,
+    Whitelist _whitelist,
     uint _depositPercentPerDay, // ex. 10 for 0.10%, 16 for 0.16%
     uint _minInvestment // 10000000000000000000 for 10 BFCL
   ) public {
     bfclToken = _bfclToken;
+    whitelist = _whitelist;
     depositPercentPerDay = _depositPercentPerDay;
     minInvestment = _minInvestment;
+  }
+
+  modifier onlyIfWhitelisted() {
+    require(whitelist.isWhitelisted(msg.sender));
+    _;
   }
 
   // reverts ETH transfers

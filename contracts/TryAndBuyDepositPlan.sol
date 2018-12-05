@@ -8,9 +8,13 @@ contract TryAndBuyDepositPlan is DepositPlan {
   uint public constant startTime = 1546300800; // Jan 01 2019 00:00:00 UTC
   uint public constant stopTime = 1548979199; // Jan 31 2019 23:59:59 UTC
 
-  constructor(IERC20 _bfclToken)
+  constructor(
+    IERC20 _bfclToken,
+    Whitelist _whitelist
+  )
     DepositPlan(
       _bfclToken,
+      _whitelist,
       3,
       10000000000000000000
     )

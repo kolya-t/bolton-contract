@@ -8,12 +8,14 @@ contract MetalDepositPlan is DepositPlan {
 
   constructor(
     IERC20 _bfclToken,
+    Whitelist _whitelist,
     uint _depositTime,
     uint _depositPercentPerDay,
     uint _minInvestment
   )
     DepositPlan(
       _bfclToken,
+      _whitelist,
       _depositPercentPerDay,
       _minInvestment
     )

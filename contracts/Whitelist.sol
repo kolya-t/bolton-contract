@@ -4,18 +4,13 @@ import "openzeppelin-solidity/contracts/access/Roles.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
-contract Whitelisted is Ownable {
+contract Whitelist is Ownable {
   using Roles for Roles.Role;
 
   Roles.Role private whitelist;
 
   event WhitelistedAddressAdded(address indexed _address);
   event WhitelistedAddressRemoved(address indexed _address);
-
-  modifier onlyIfWhitelisted() {
-    require(isWhitelisted(msg.sender));
-    _;
-  }
 
   function isWhitelisted(address _address) public view returns (bool) {
     return whitelist.has(_address);
