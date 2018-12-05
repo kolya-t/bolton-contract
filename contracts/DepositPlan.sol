@@ -47,6 +47,21 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     revert();
   }
 
+  function getAccountInfo(address _address)
+    external
+    view
+    returns (address, uint, uint, uint, uint)
+  {
+    Account storage account = accounts[_address];
+    return (
+      address(account.vault),
+      account.deposit,
+      account.lastWithdrawTime,
+      account.depositEndTime,
+      account.debt
+    );
+  }
+
   function transferErc20(
     IERC20 _token,
     address _to,
