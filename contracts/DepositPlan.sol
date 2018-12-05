@@ -65,7 +65,7 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
       account.lastWithdrawTime = now;
       account.depositEndTime = now + depositTime;
     } else {
-      _sendDividends(investor);
+      _sendPayouts(investor);
       account.deposit = account.deposit.add(_tokenAmount);
     }
   }
@@ -77,7 +77,7 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
   {
     for (uint i = 0; i < _investors.length; i++) {
       address investor = _investors[i];
-      _sendDividends(investor);
+      _sendPayouts(investor);
     }
   }
 
@@ -85,7 +85,8 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     address investor = msg.sender;
     Account storage account = accounts[investor];
     require(now >= account.depositEndTime);
-    _sendDividends(investor);
+    _sendPayouts(investor);
+    account.vault.withdrawToInvestor(account.deposit);
     delete accounts[investor];
   }
 
@@ -124,7 +125,7 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     }
   }
 
-  function _sendDividends(address _investor) internal {
+  function _sendPayouts(address _investor) internal {
     Account storage account = accounts[_investor];
     uint mustPay = _calculateAccountPayoutsForTime(account, now);
     account.lastWithdrawTime = now;
