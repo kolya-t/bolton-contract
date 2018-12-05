@@ -85,11 +85,22 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     return bfclToken.balanceOf(address(this));
   }
 
+  function calculateInvestorPayoutsForTime(address _investor, uint _timestamp) external view returns (uint) {
+    Account storage account = accounts[_investor];
+    return _calculateAccountPayoutsForTime(account, _timestamp);
+  }
+
+  function calculatePayoutsForTime(address[] _investors, uint _timestamp) external view returns (uint) {
+    uint payouts;
+    for (uint i = 0; i < _investors.length; i++) {
+      Account storage account = accounts[_investors[i]];
+      payouts = payouts.add(_calculateAccountPayoutsForTime(account, _timestamp));
+    }
+  }
+
   function _sendDividends(address _investor) internal {
     Account storage account = accounts[_investor];
-    uint dividends = _calculateDividends(account);
-    uint debt = account.debt;
-    uint mustPay = dividends.add(debt);
+    uint mustPay = _calculateAccountPayoutsForTime(account, now);
     account.lastWithdrawTime = now;
 
     if (mustPay > 0) {
@@ -110,9 +121,10 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     }
   }
 
-  function _calculateDividends(Account storage _account) internal view returns (uint) {
-    uint sec = now - _account.lastWithdrawTime;
+  function _calculateAccountPayoutsForTime(Account storage _account, uint _timestamp) internal view returns (uint) {
+    uint sec = _timestamp - _account.lastWithdrawTime;
     uint percentPerSecond = depositPercentPerDay * 1 days;
-    return _account.deposit * sec * percentPerSecond;
+    uint dividends = _account.deposit.mul(sec).mul(percentPerSecond).div(10000);
+    return dividends.add(_account.debt);
   }
 }
