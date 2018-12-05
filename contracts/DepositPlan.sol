@@ -11,7 +11,6 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
   using SafeMath for uint;
 
   IERC20 public bfclToken;
-  uint public depositTime;
   uint public depositPercentPerDay;
   uint public minInvestment;
 
@@ -27,12 +26,10 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
 
   constructor(
     IERC20 _bfclToken,
-    uint _depositTime, // ex. 15 days or 1 year
     uint _depositPercentPerDay, // ex. 10 for 0.10%, 16 for 0.16%
     uint _minInvestment // 10000000000000000000 for 10 BFCL
   ) public {
     bfclToken = _bfclToken;
-    depositTime = _depositTime;
     depositPercentPerDay = _depositPercentPerDay;
     minInvestment = _minInvestment;
   }
@@ -42,7 +39,7 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     revert();
   }
 
-  // reverts erc223 transfers
+  // reverts erc223 token transfers
   function tokenFallback(address, uint, bytes) external pure {
     revert();
   }
@@ -83,27 +80,27 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     bfclToken.transfer(_to, _value);
   }
 
-  function invest(uint _tokenAmount)
-    external
-    nonReentrant
-    onlyIfWhitelisted
-  {
+  function invest(uint _tokenAmount) external;
+
+  function _invest(
+    uint _tokenAmount,
+    uint _depositEndTime
+  ) internal {
     address investor = msg.sender;
     Account storage account = accounts[investor];
 
-    if (account.vault == Vault(0)) {
-      require(_tokenAmount >= minInvestment);
-      require(bfclToken.allowance(investor, address(this)) >= _tokenAmount);
-
-      account.vault = new Vault(investor, bfclToken);
-      bfclToken.transferFrom(investor, account.vault, _tokenAmount);
-      account.deposit = _tokenAmount;
-      account.lastWithdrawTime = now;
-      account.depositEndTime = now + depositTime;
-    } else {
-      _sendPayouts(investor);
-      account.deposit = account.deposit.add(_tokenAmount);
+    if (account.vault != Vault(0)) {
+      revert();
     }
+
+    require(_tokenAmount >= minInvestment);
+    require(bfclToken.allowance(investor, address(this)) >= _tokenAmount);
+
+    account.vault = new Vault(investor, bfclToken);
+    bfclToken.transferFrom(investor, account.vault, _tokenAmount);
+    account.deposit = _tokenAmount;
+    account.lastWithdrawTime = now;
+    account.depositEndTime = _depositEndTime;
   }
 
   function airdrop(address[] _investors)
@@ -192,9 +189,20 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     view
     returns (uint)
   {
-    uint sec = _timestamp - _account.lastWithdrawTime;
-    uint percentPerSecond = depositPercentPerDay * 1 days;
-    uint dividends = _account.deposit.mul(sec).mul(percentPerSecond).div(10000);
+    uint period = _timestamp.sub(_account.lastWithdrawTime);
+    return _calculateAccountPayoutsForPeriod(_account, period);
+  }
+
+  function _calculateAccountPayoutsForPeriod(
+    Account storage _account,
+    uint _period
+  )
+    internal
+    view
+    returns (uint)
+  {
+    uint percentPerSecond = depositPercentPerDay.mul(1 days);
+    uint dividends = _account.deposit.mul(_period).mul(percentPerSecond).div(10000);
     return dividends.add(_account.debt);
   }
 }

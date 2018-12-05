@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "./DepositPlan.sol";
+import "./MetalDepositPlan.sol";
 
 
-contract PlatinumDepositPlan is DepositPlan {
+contract PlatinumDepositPlan is MetalDepositPlan {
   constructor(IERC20 _bfclToken)
-    DepositPlan(
+    MetalDepositPlan(
       _bfclToken,
       730 days,
       16,
