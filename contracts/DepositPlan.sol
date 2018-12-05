@@ -22,6 +22,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     uint deposit;
     uint lastWithdrawTime;
     uint depositEndTime;
+    uint debt;
   }
 
   constructor(
@@ -80,12 +81,32 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     delete accounts[investor];
   }
 
+  function getBalance() public view returns (uint) {
+    return bfclToken.balanceOf(address(this));
+  }
+
   function _sendDividends(address _investor) internal {
     Account storage account = accounts[_investor];
     uint dividends = _calculateDividends(account);
+    uint debt = account.debt;
+    uint mustPay = dividends.add(debt);
     account.lastWithdrawTime = now;
-    if (dividends > 0) {
-      account.vault.withdrawToInvestor(dividends);
+
+    if (mustPay > 0) {
+      uint balance = getBalance();
+      uint canPay;
+
+      if (balance >= mustPay) {
+        account.debt = 0;
+        canPay = mustPay;
+      } else {
+        account.debt = mustPay.sub(balance);
+        canPay = balance;
+      }
+
+      if (canPay > 0) {
+        bfclToken.transfer(_investor, balance);
+      }
     }
   }
 
