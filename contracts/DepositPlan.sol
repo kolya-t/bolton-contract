@@ -47,6 +47,27 @@ contract DepositPlan is Whitelisted, ReentrancyGuard {
     revert();
   }
 
+  function transferErc20(
+    IERC20 _token,
+    address _to,
+    uint _value
+  )
+    external
+    onlyOwner
+  {
+    _token.transfer(_to, _value);
+  }
+
+  function transferBfcl(
+    address _to,
+    uint _value
+  )
+    external
+    onlyOwner
+  {
+    bfclToken.transfer(_to, _value);
+  }
+
   function invest(uint _tokenAmount)
     external
     nonReentrant
