@@ -14,8 +14,13 @@
   "license": "ISC",
   "dependencies": {
     "bignumber.js": "^8.0.1",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^3.0.0",
     "ganache-cli": "^6.2.3",
     "openzeppelin-solidity": "^2.0.0",
+    "pify": "^4.0.1",
+    "sc-library": "git+https://github.com/MyWishPlatform/sc-library.git",
     "truffle": "^4.1.14"
   }
 }
