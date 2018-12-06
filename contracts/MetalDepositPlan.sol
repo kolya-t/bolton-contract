@@ -29,7 +29,7 @@ contract MetalDepositPlan is DepositPlan {
     nonReentrant
     onlyIfWhitelisted
   {
-    _invest(_tokenAmount, now + depositTime);
+    _invest(_tokenAmount, now.add(depositTime));
   }
 
   function replenish(uint _tokenAmount)
@@ -46,5 +46,9 @@ contract MetalDepositPlan is DepositPlan {
 
     _sendPayouts(investor);
     account.deposit = account.deposit.add(_tokenAmount);
+
+    if (now >= account.depositEndTime) {
+      account.depositEndTime = now.add(depositTime);
+    }
   }
 }
