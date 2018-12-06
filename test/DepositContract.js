@@ -125,7 +125,6 @@ describe('Whitelist', async () =>{
         (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
 	})
 
-    /*
 	it('#5 check bulk remove from whitelist', async () => {
 		const depositContracts = await createDepositContracts();
         const whitelist = depositContracts.whitelist;
@@ -133,16 +132,11 @@ describe('Whitelist', async () =>{
         (await whitelist.isWhitelisted(INVESTORS[0])).should.be.true;
         (await whitelist.isWhitelisted(INVESTORS[1])).should.be.true;
         (await whitelist.isWhitelisted(INVESTORS[2])).should.be.true;
-        await whitelist.removeAddressesFromWhitelist(INVESTORS, {from: OWNER});
-
-  
-        //(await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
-        //(await whitelist.isWhitelisted(INVESTORS[1])).should.be.false;
-        //(await whitelist.isWhitelisted(INVESTORS[2])).should.be.false;
-        console.log(INVESTORS[1]);
-        console.log(await whitelist.isWhitelisted(INVESTORS[1]));
+        await whitelist.removeAddressesFromWhitelist(INVESTORS);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[1])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[2])).should.be.false;
 	})
-	*/
 })
 
 describe('Vault tests', async () =>{
