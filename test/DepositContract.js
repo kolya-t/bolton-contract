@@ -21,8 +21,7 @@ const gasPrice = 10 ** 11;
 
 contract('DepositContract', accounts => {
 	const OWNER = accounts[1]
-	const INVESTOR_1 = accounts[2]
-	const INVESTOR_2 = accounts[3]
+	const INVESTORS = [accounts[2], accounts[3], accounts[4]];
 
 	let snapshotId;
 
@@ -58,7 +57,7 @@ contract('DepositContract', accounts => {
         await revert(snapshotId);
     });
     
-    describe('Common deposit contracts tests', async () => {
+    describe('Precheck', async () => {
         it('#0 gas limit', async () => {
         	const token = await Token.new();
     	    await estimateConstructGas(Whitelist, OWNER, token.address)
@@ -83,10 +82,58 @@ contract('DepositContract', accounts => {
     	    depositContracts.platinum.address.should.have.length(42);
     	    depositContracts.demo.address.should.have.length(42);
         })
-
     })
-    
 
+describe('Whitelist', async () =>{
+	it('#1 check whitelist empty', async () => {
+		const depositContracts = await createDepositContracts();
+		const whitelist = depositContracts.whitelist;
+		const INVESTOR = INVESTORS[0];
+		const notWhitelisted = await whitelist.isWhitelisted(INVESTOR);
+		notWhitelisted.should.be.false;
+	})
 
+	it('#2 check add to whitelist', async () => {
+		const depositContracts = await createDepositContracts();
+        const whitelist = depositContracts.whitelist;
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
+        await whitelist.addAddressToWhitelist(INVESTORS[0]);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.true;
+	})
+
+	it('#3 check bulk add to whitelist', async () => {
+		const depositContracts = await createDepositContracts();
+        const whitelist = depositContracts.whitelist;
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[1])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[2])).should.be.false;
+        await whitelist.addAddressesToWhitelist(INVESTORS);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.true;
+        (await whitelist.isWhitelisted(INVESTORS[1])).should.be.true;
+        (await whitelist.isWhitelisted(INVESTORS[2])).should.be.true;
+	})
+
+	it('#4 check remove from whitelist', async () => {
+		const depositContracts = await createDepositContracts();
+        const whitelist = depositContracts.whitelist;
+        await whitelist.addAddressToWhitelist(INVESTORS[0]);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.true;
+        await whitelist.removeAddressFromWhitelist(INVESTORS[0]);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
+	})
+
+	it('#5 check bulk remove from whitelist', async () => {
+		const depositContracts = await createDepositContracts();
+        const whitelist = depositContracts.whitelist;
+        await whitelist.addAddressesToWhitelist(INVESTORS);
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.true;
+        (await whitelist.isWhitelisted(INVESTORS[1])).should.be.true;
+        (await whitelist.isWhitelisted(INVESTORS[2])).should.be.true;
+        await whitelist.removeAddressesFromWhitelist(INVESTORS)
+        (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[1])).should.be.false;
+        (await whitelist.isWhitelisted(INVESTORS[2])).should.be.false;
+	})
 })
 
+});
