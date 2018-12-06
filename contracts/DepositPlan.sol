@@ -10,7 +10,8 @@ import "./Vault.sol";
 contract DepositPlan is Ownable, ReentrancyGuard {
   using SafeMath for uint;
 
-  event NewInvestor(address indexed _investor);
+  event AddInvestor(address indexed _investor);
+  event RemoveInvestor(address indexed _investor);
 
   IERC20 public bfclToken;
   Whitelist public whitelist;
@@ -114,7 +115,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     account.lastWithdrawTime = now;
     account.depositEndTime = _depositEndTime;
 
-    emit NewInvestor(investor);
+    emit AddInvestor(investor);
   }
 
   function airdrop(address[] _investors)
@@ -136,6 +137,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     account.vault.withdrawToInvestor(account.deposit);
     if (account.debt == 0) {
       delete accounts[investor];
+      emit RemoveInvestor(investor);
     } else {
       account.isClosed = true;
     }
