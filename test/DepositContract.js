@@ -6,6 +6,7 @@ chai.should();
 const pify = require('pify');
 const { timeTo, increaseTime, snapshot, revert } = require('sc-library/test-utils/evmMethods');
 const { estimateConstructGas } = require('sc-library/test-utils/web3Utils');
+const truffleAssert  = require('truffle-assertions');
 
 const BigNumber = web3.BigNumber;
 
@@ -136,6 +137,29 @@ describe('Whitelist', async () =>{
         (await whitelist.isWhitelisted(INVESTORS[0])).should.be.false;
         (await whitelist.isWhitelisted(INVESTORS[1])).should.be.false;
         (await whitelist.isWhitelisted(INVESTORS[2])).should.be.false;
+	})
+
+	it('#6 check add events', async () => {
+		const depositContracts = await createDepositContracts();
+		const whitelist = depositContracts.whitelist;
+		const investor = INVESTORS[0];
+		const txAdd = await whitelist.addAddressToWhitelist(investor).should.be.fulfilled;
+		truffleAssert.eventEmitted(txAdd, 'WhitelistedAddressAdded', (ev) => {
+			return ev._address.should.be.equals(investor);
+		});
+		truffleAssert.prettyPrintEmittedEvents(txAdd);
+	})
+
+	it('#7 check remove events', async () => {
+		const depositContracts = await createDepositContracts();
+		const whitelist = depositContracts.whitelist;
+		const investor = INVESTORS[0];
+		await whitelist.addAddressToWhitelist(investor).should.be.fulfilled;
+		const txRemove = await whitelist.removeAddressFromWhitelist(investor).should.be.fulfilled;
+		truffleAssert.eventEmitted(txRemove, 'WhitelistedAddressRemoved', (ev) => {
+			return ev._address.should.be.equals(investor);
+		});
+		truffleAssert.prettyPrintEmittedEvents(txRemove);
 	})
 })
 

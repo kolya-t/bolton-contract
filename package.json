@@ -21,6 +21,7 @@
     "openzeppelin-solidity": "^2.0.0",
     "pify": "^4.0.1",
     "sc-library": "git+https://github.com/MyWishPlatform/sc-library.git",
-    "truffle": "^4.1.14"
+    "truffle": "^4.1.14",
+    "truffle-assertions": "^0.7.1"
   }
 }
