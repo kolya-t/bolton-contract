@@ -10,6 +10,8 @@ import "./Vault.sol";
 contract DepositPlan is Ownable, ReentrancyGuard {
   using SafeMath for uint;
 
+  event NewInvestor(address indexed _investor);
+
   IERC20 public bfclToken;
   Whitelist public whitelist;
   uint public depositPercentPerDay;
@@ -111,6 +113,8 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     account.deposit = _tokenAmount;
     account.lastWithdrawTime = now;
     account.depositEndTime = _depositEndTime;
+
+    emit NewInvestor(investor);
   }
 
   function airdrop(address[] _investors)
