@@ -50,5 +50,9 @@ contract MetalDepositPlan is DepositPlan {
     if (now >= account.depositEndTime) {
       account.depositEndTime = now.add(depositTime);
     }
+
+    if (account.isClosed) {
+      account.isClosed = false;
+    }
   }
 }

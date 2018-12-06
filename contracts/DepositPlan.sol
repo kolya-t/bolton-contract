@@ -23,6 +23,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     uint lastWithdrawTime;
     uint depositEndTime;
     uint debt;
+    bool isClosed;
   }
 
   constructor(
@@ -55,7 +56,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
   function getAccountInfo(address _address)
     external
     view
-    returns (address, uint, uint, uint, uint)
+    returns (address, uint, uint, uint, uint, bool)
   {
     Account storage account = accounts[_address];
     return (
@@ -63,7 +64,8 @@ contract DepositPlan is Ownable, ReentrancyGuard {
       account.deposit,
       account.lastWithdrawTime,
       account.depositEndTime,
-      account.debt
+      account.debt,
+      account.isClosed
     );
   }
 
@@ -128,7 +130,11 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     require(now >= account.depositEndTime);
     _sendPayouts(investor);
     account.vault.withdrawToInvestor(account.deposit);
-    delete accounts[investor];
+    if (account.debt == 0) {
+      delete accounts[investor];
+    } else {
+      account.isClosed = true;
+    }
   }
 
   function getBalance()
@@ -209,8 +215,11 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     view
     returns (uint)
   {
-    uint percentPerSecond = depositPercentPerDay.mul(1 days);
-    uint dividends = _account.deposit.mul(_period).mul(percentPerSecond).div(10000);
+    uint dividends;
+    if (!_account.isClosed) {
+      uint percentPerSecond = depositPercentPerDay.mul(1 days);
+      dividends = _account.deposit.mul(_period).mul(percentPerSecond).div(10000);
+    }
     return dividends.add(_account.debt);
   }
 }
