@@ -196,7 +196,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
       }
 
       if (canPay > 0) {
-        bfclToken.transfer(_investor, balance);
+        bfclToken.transfer(_investor, canPay);
       }
     }
   }
