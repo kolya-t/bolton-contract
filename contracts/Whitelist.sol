@@ -31,7 +31,7 @@ contract Whitelist is Ownable {
   }
 
   function removeAddressesFromWhitelist(address[] _addresses) external onlyOwner {
-    for (uint i = 0; i > _addresses.length; i++) {
+    for (uint i = 0; i < _addresses.length; i++) {
       _removeAddressFromWhitelist(_addresses[i]);
     }
   }
