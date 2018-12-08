@@ -5,7 +5,7 @@ chai.use(require('chai-bignumber')(web3.BigNumber));
 chai.should();
 const pify = require('pify');
 const { timeTo, increaseTime, snapshot, revert } = require('sc-library/test-utils/evmMethods');
-const { estimateConstructGas } = require('sc-library/test-utils/web3Utils');
+const { web3async, estimateConstructGas } = require('sc-library/test-utils/web3Utils');
 const truffleAssert  = require('truffle-assertions');
 
 const BigNumber = web3.BigNumber;
@@ -20,12 +20,13 @@ const TryAndBuy = artifacts.require('./TryAndBuyDepositPlan.sol');
 
 const DAY = 24 * 3600;
 const gasPrice = 10 ** 11;
+const ETH = web3.toWei(1, 'ether');
 const DECIMALS = 10 ** 18;
 const tokenSupply = (10 ** 9 ) * DECIMALS;
 const simpleAmount = tokenSupply / 10;
 const userAmount = simpleAmount / 2;
 const tokenSupplyBN = new BigNumber(tokenSupply);
-const simpleBN = new BigNumber(simpleAmount);
+const simpleAmountBN = new BigNumber(simpleAmount);
 const userAmountBN = new BigNumber(userAmount);
 
 
@@ -51,12 +52,12 @@ contract('DepositContract', accounts => {
         const demoContract = await TryAndBuy.new(token.address, whitelist.address, {from: OWNER});
         
         await token.mint(OWNER, tokenSupply, {from: OWNER}).should.be.fulfilled;
-        await token.approve(silverContract.address, tokenSupply, {from: OWNER})
+        await token.transfer(silverContract.address, tokenSupply, {from: OWNER})
             .should.be.fulfilled;
-        tokenSupplyBN.should.be.bignumber.equals(await token.allowance(OWNER, silverContract.address));
+        tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(silverContract.address));
         for (let i = 0; i < INVESTORS.length; i++) {
             await token.mint(INVESTORS[i], simpleAmount, {from: OWNER}).should.be.fulfilled
-            simpleBN.should.be.bignumber.equals(await token.balanceOf(INVESTORS[i]));
+            simpleAmountBN.should.be.bignumber.equals(await token.balanceOf(INVESTORS[i]));
         }
         return {
             token: token,
@@ -199,51 +200,167 @@ describe('Whitelist', async () =>{
 
 describe('Vault tests', async () =>{
     it('#0 check construct', async () => {
-        const token = await Token.new(OWNER);
-        const vault = await Vault.new(OWNER, token.address);
+        const token = await Token.new(OWNER, {from: OWNER});
+        const vault = await Vault.new(OWNER, token.address, {from: OWNER});
         (await vault.investor()).should.be.equals(OWNER);
     })
     
-    it('#1 check simple accept tokens', async () => {
-        const token = await Token.new(OWNER);
-        const vault = await Vault.new(OWNER, token.address);
-        await token.mint(OWNER, simpleAmount).should.be.fulfilled;
+    it('#1 check vault accept tokens', async () => {
+        const token = await Token.new(OWNER, {from: OWNER});
+        const vault = await Vault.new(OWNER, token.address, {from: OWNER});
+        await token.mint(OWNER, simpleAmount, {from: OWNER}).should.be.fulfilled;
         await token.transfer(vault.address, simpleAmount, {from: OWNER}).should.be.fulfilled;
-
-        const balance = await vault.getBalance();
-        console.log(balance);
         const vaultBalance = await token.balanceOf(vault.address);
-        console.log(vaultBalance);
+        vaultBalance.should.be.bignumber.equals(simpleAmountBN);
     });
 
-    /*
-    it('#1 check transfer tokens from vault', async () => {
-        const token = await Token.new(OWNER);
-        const vault = await Vault.new(OWNER, token.address);
-        await token.mint(OWNER, simpleAmount).should.be.fulfilled;
+    it('#2 check vault shows balance', async () => {
+        const token = await Token.new(OWNER, {from: OWNER});
+        const vault = await Vault.new(OWNER, token.address, {from: OWNER});
+        await token.mint(OWNER, simpleAmount, {from: OWNER}).should.be.fulfilled;
+        await token.transfer(vault.address, simpleAmount, {from: OWNER}).should.be.fulfilled;
+        const vaultBalance = await token.balanceOf(vault.address);
+        vaultBalance.should.be.bignumber.equals(simpleAmountBN);
+
+        const vaultInternalBalance = await vault.getBalance();
+        console.log(vaultInternalBalance);
+    });
+
+    it('#3 check vault rejects ETH', async () => {
+        const token = await Token.new(OWNER, {from: OWNER});
+        const vault = await Vault.new(OWNER, token.address, {from: OWNER});
+        await token.mint(OWNER, simpleAmount, {from: OWNER}).should.be.fulfilled;
+        await vault.sendTransaction({from: OWNER, value: ETH}).should.be.rejected;
+    });
+
+    it('#4 check vault can return tokens back', async () => {
+        const token = await Token.new(OWNER, {from: OWNER});
+        const vault = await Vault.new(OWNER, token.address, {from: OWNER});
+        await token.mint(OWNER, simpleAmount, {from: OWNER}).should.be.fulfilled;
         await token.transfer(vault.address, simpleAmount, {from: OWNER}).should.be.fulfilled;
         await vault.withdrawToInvestor(simpleAmount, {from: OWNER}).should.be.fulfilled;
-        console.log(await token.balanceOf(OWNER));
+        const userBalanceAfter = await token.balanceOf(OWNER);
+        userBalanceAfter.should.be.bignumber.equals(simpleAmountBN);
     });
-    */
-});
 
-describe('Payment tests', async () =>{
-    it('#1 check simple deposit', async () => {
-    const depositContracts = await createDepositContracts();
+    it('#5 check vault created and received tokens from deposit', async () => {
+        const depositContracts = await createDepositContracts();
         await depositContracts.token.approve(depositContracts.silver.address, simpleAmount, {from: INVESTOR_1})
             .should.be.fulfilled;
         await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
         await depositContracts.silver.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
-        const balanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
-        console.log(balanceBefore);
-        await depositContracts.silver.replenish(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
-        const balanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
-        console.log(balanceAfter);
-        //userAmountBN.should.be.bignumber.equals(new BigNumber(balanceBefore - balanceAfter));
         const accountInfo = await depositContracts.silver.getAccountInfo(INVESTOR_1);
-        console.log(accountInfo);
-     })
+        accountInfo[0].should.have.length(42);
+        const vaultBalanceAfter = await depositContracts.token.balanceOf(accountInfo[0]);
+        vaultBalanceAfter.should.be.bignumber.equals(userAmountBN);
+    });
 });
 
+describe('Account creation and deposit tests', async () =>{
+    it('#1 check simple deposit', async () => {
+        const depositContracts = await createDepositContracts();
+        await depositContracts.token.approve(depositContracts.silver.address, simpleAmount, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        const userBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
+        await depositContracts.silver.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+        const userBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
+        userAmountBN.should.be.bignumber.equals(userBalanceBefore - userBalanceAfter);
+        const accountInfo = await depositContracts.silver.getAccountInfo(INVESTOR_1);
+        const vaultBalanceAfter = await depositContracts.token.balanceOf(accountInfo[0]);
+        vaultBalanceAfter.should.be.bignumber.equals(userAmountBN);
+    });
+
+    it('#2 check reverts if allowance is not enough', async () => {
+        const depositContracts = await createDepositContracts();
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        await depositContracts.token.approve(depositContracts.silver.address, simpleAmount / 100, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.silver.invest(userAmount, {from: INVESTOR_1}).should.not.be.fulfilled;
+    });
+
+    it('#3 check reverts if amount is less than minimal', async () => {
+        const depositContracts = await createDepositContracts();
+        const minAmount = depositContracts.silver.minInvestment();
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        await depositContracts.token.approve(depositContracts.silver.address, simpleAmount, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.silver.invest(minAmount / 100, {from: INVESTOR_1}).should.not.be.fulfilled;
+    });
+
+    it('#4 check reverts if invest called twice', async () => {
+        const depositContracts = await createDepositContracts();
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        await depositContracts.token.approve(depositContracts.silver.address, simpleAmount, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.silver.invest(simpleAmount / 3, {from: INVESTOR_1}).should.be.fulfilled;
+        await depositContracts.silver.invest(simpleAmount / 3, {from: INVESTOR_1}).should.not.be.fulfilled;
+
+    });    
+
+    it('#5 check time is tracking', async () => {
+        const depositContracts = await createDepositContracts();
+        const contract = depositContracts.silver
+        await depositContracts.token.approve(contract.address, simpleAmount, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        const currentTime = await getBlockchainTimestamp();
+        const contractTime = await contract.depositTime();
+
+        await contract.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+        const accountInfo = await contract.getAccountInfo(INVESTOR_1);
+        const lastWithdrawTime = accountInfo[2];
+        const userEndTime = accountInfo[3];
+        Number(lastWithdrawTime).should.be.closeTo(currentTime, 10);
+        Number(userEndTime).should.be.closeTo(currentTime + Number(contractTime), 10)
+    });
+});
+describe('Replenish tests', async () =>{
+it('#1 check replenish', async () => {
+        const depositContracts = await createDepositContracts();
+        await depositContracts.token.approve(depositContracts.silver.address, simpleAmount, {from: INVESTOR_1})
+            .should.be.fulfilled;
+        await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+        await depositContracts.silver.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+
+        const accountInfo = await depositContracts.silver.getAccountInfo(INVESTOR_1);
+        const accountDeposit = accountInfo[1];        
+        const vaultBalance = await depositContracts.token.balanceOf(accountInfo[0]);
+        const userBalance = await depositContracts.token.balanceOf(INVESTOR_1);
+        const contractBalance = await depositContracts.token.balanceOf(depositContracts.silver.address);
+        console.log("Before:");
+        console.info("account info:");
+        console.info(accountInfo);
+        console.info("user balance:");
+        console.info(userBalance);
+        console.info("vault balance:");
+        console.log(vaultBalance);
+        console.log("deposit contract balance");
+        console.log(contractBalance);
+        
+        const currentTime = await getBlockchainTimestamp();
+        await timeTo(currentTime + DAY);
+
+        await depositContracts.silver.replenish(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+
+        
+        const userBalanceReplenished = await depositContracts.token.balanceOf(INVESTOR_1);
+        //userBalanceReplenished.should.be.bignumber.equals(userBalance - userAmountBN);
+        const accountInfoReplenished = await depositContracts.silver.getAccountInfo(INVESTOR_1);
+        const accountDepositReplenished = accountInfoReplenished[1];
+        //accountDepositReplenished.should.be.bignumber.equals(accountInfoBN + userAmountBN);
+        const vaultBalanceReplenished = await depositContracts.token.balanceOf(accountInfo[0]);
+        //vaultBalanceReplenished.should.be.bignumber.equals(vaultBalance + userAmountBN);
+        const contractBalanceReplenished = await depositContracts.token.balanceOf(depositContracts.silver.address);
+        console.log("After:");
+        console.info("account info:");
+        console.info(accountInfoReplenished);
+        console.info("user balance:");
+        console.log(userBalanceReplenished);
+        console.info("vault balance:");
+        console.log(vaultBalanceReplenished);
+        console.log("deposit contract balance:");
+        console.log(contractBalanceReplenished);
+    });
+});
 });
