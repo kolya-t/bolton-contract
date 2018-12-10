@@ -111,7 +111,6 @@ contract('DepositContract', accounts => {
         await revert(snapshotId);
     });
 
-    
     describe('Precheck', async () => {
         it('#0 gas limit', async () => {
             const token = await Token.new();
@@ -275,11 +274,10 @@ contract('DepositContract', accounts => {
             userBalanceAfter.should.be.bignumber.equals(simpleAmountBN);
         });
     });
-    
 
-    //function depositContractTests(_contractPlan) {
+
+
     const depositContractTests = async (_contractPlan) => {
-        
         describe('Account creation and deposit', async () =>{
             it('#1 check simple deposit', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -360,6 +358,51 @@ contract('DepositContract', accounts => {
                 const vaultBalanceAfter = await depositContracts.token.balanceOf(accountInfo[0]);
                 vaultBalanceAfter.should.be.bignumber.equals(userAmountBN);
             });
+
+            if (_contractPlan != "demo") {
+                it('#7 create deposit, close, wait and open again', async () => {
+                    const depositContracts = await createDepositContracts(_contractPlan);
+                    const contract = depositContracts.mainContract;
+                    const investAmountBN = await contract.minInvestment();
+                    const investAmount = Number(investAmountBN);
+
+                    await depositContracts.token.approve(contract.address, investAmount * 2, {from: INVESTOR_1})
+                        .should.be.fulfilled;
+                    await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+                    await contract.invest(investAmount, {from: INVESTOR_1}).should.be.fulfilled;
+
+                    const accountInfo = await contract.getAccountInfo(INVESTOR_1);
+                    const accountEndTime = Number(accountInfo[3]);
+
+                    await timeTo(accountEndTime + 10);
+                    const currentTime = await getBlockchainTimestamp();
+                    Number(currentTime).should.be.greaterThan(accountEndTime);
+
+                    await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
+                    await timeTo(accountEndTime + DAY);
+
+                    const accountInfoClosed = await contract.getAccountInfo(INVESTOR_1);
+
+                    String(accountInfoClosed[0]).should.be.equals("0x0000000000000000000000000000000000000000");
+                    for (let i = 1; i < 5; i++) {
+                        Number(accountInfoClosed[i]).should.be.zero;
+                    }
+                    Boolean(accountInfoClosed[5]).should.be.false;
+
+                    const tokenBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
+
+                    await contract.invest(investAmount, {from: INVESTOR_1}).should.be.fulfilled;
+                    const accountInfoReopened = await contract.getAccountInfo(INVESTOR_1);
+                    (accountInfoReopened[0]).should.have.length(42);
+                    (accountInfoReopened[1]).should.be.bignumber.equals(investAmountBN);
+                    Number(accountInfoReopened[2]).should.be.at.least(accountEndTime + DAY);
+                    (accountInfoReopened[4]).should.be.bignumber.zero;
+                    (accountInfoReopened[5]).should.be.false;
+
+                    const tokenBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
+                    tokenBalanceBefore.sub(tokenBalanceAfter).should.be.bignumber.equals(investAmountBN);
+                });
+            };
         });
 
         describe('Calculations and repay', async () =>{
@@ -511,9 +554,8 @@ contract('DepositContract', accounts => {
             });
         });
         
-
         describe('Other methods', async () => {
-            it('#0 check calling airdrop', async () => {
+            it('#1 check calling airdrop', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
                 const investAmountBN = await contract.minInvestment();
@@ -532,6 +574,8 @@ contract('DepositContract', accounts => {
                     depositTime = TRY_AND_BUY_TIME;
                 };
 
+                const absoluteDepositTime = await getBlockchainTimestamp() + depositTime;
+
                 const usersCount = INVESTORS.length;
                 let usersBalancesBefore = [];
 
@@ -541,28 +585,21 @@ contract('DepositContract', accounts => {
                     await contract.invest(investAmount, {from: INVESTORS[i]}).should.be.fulfilled;
                     usersBalancesBefore.push(await depositContracts.token.balanceOf(INVESTORS[i]));
                 };
-                console.log("test")
 
-                const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, depositTime + 10);
-                console.log("test1")
+                const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, absoluteDepositTime + 10);
+                const contractBalanceBefore = await depositContracts.token.balanceOf(contract.address);
 
-                await timeTo(depositTime + 10);
-                const currentTime = await getBlockchainTimestamp();
-                Number(currentTime).should.be.greaterThan(depositTime);
-                
+                await timeTo(absoluteDepositTime + 10);                
                 await contract.airdrop(INVESTORS, {from: OWNER}).should.be.fulfilled;
 
                 const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
-                contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculted.mul(usersCount));
+                contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated.mul(usersCount));
 
                 for (let i = 0; i < usersCount; i++) {
                     const balanceAfter = await depositContracts.token.balanceOf(INVESTORS[i]);
                     const balanceBefore = usersBalancesBefore[i];
-                    console.log(balanceBefore);
-                    console.log(balanceAfter);
                     balanceAfter.sub(balanceBefore).should.be.bignumber.at.least(payoutsCalculated);
                 };
-
             });
 
             it('#2 check transfer BFCL', async () => {
