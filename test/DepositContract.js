@@ -111,6 +111,7 @@ contract('DepositContract', accounts => {
         await revert(snapshotId);
     });
 
+    
     describe('Precheck', async () => {
         it('#0 gas limit', async () => {
             const token = await Token.new();
@@ -274,9 +275,11 @@ contract('DepositContract', accounts => {
             userBalanceAfter.should.be.bignumber.equals(simpleAmountBN);
         });
     });
+    
 
     //function depositContractTests(_contractPlan) {
     const depositContractTests = async (_contractPlan) => {
+        
         describe('Account creation and deposit', async () =>{
             it('#1 check simple deposit', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -360,56 +363,40 @@ contract('DepositContract', accounts => {
         });
 
         describe('Calculations and repay', async () =>{
-            it('#1 check replenish', async () => {
-                const depositContracts = await createDepositContracts(_contractPlan);
-                const contract = depositContracts.mainContract;
-                await depositContracts.token.approve(contract.address, simpleAmount, {from: INVESTOR_1})
-                    .should.be.fulfilled;
-                await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
-                await contract.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+            if (_contractPlan != "demo") {
+                it('#1 check replenish', async () => {
+                    const depositContracts = await createDepositContracts(_contractPlan);
+                    const contract = depositContracts.mainContract;
+                    await depositContracts.token.approve(contract.address, simpleAmount, {from: INVESTOR_1})
+                        .should.be.fulfilled;
+                    await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+                    await contract.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
 
-                const accountInfo = await contract.getAccountInfo(INVESTOR_1);
-                const accountDeposit = accountInfo[1];
-                const vaultBalance = await depositContracts.token.balanceOf(accountInfo[0]);
-                const userBalance = await depositContracts.token.balanceOf(INVESTOR_1);
-                const contractBalance = await depositContracts.token.balanceOf(contract.address);
-                console.log("Before:");
-                console.info("account info:");
-                console.info(accountInfo);
-                console.info("user balance:");
-                console.info(userBalance);
-                console.info("vault balance:");
-                console.log(vaultBalance);
-                console.log("deposit contract balance");
-                console.log(contractBalance);
+                    const accountInfo = await contract.getAccountInfo(INVESTOR_1);
+                    const accountDeposit = accountInfo[1];
+                    const vaultBalance = await depositContracts.token.balanceOf(accountInfo[0]);
+                    const userBalance = await depositContracts.token.balanceOf(INVESTOR_1);
+                    const contractBalance = await depositContracts.token.balanceOf(contract.address);
 
-                const currentTime = await getBlockchainTimestamp();
-                await timeTo(currentTime + DAY);
+                    const currentTime = await getBlockchainTimestamp();
+                    const replenishTime = currentTime + DAY;
+                    const payouts = await contract.calculateInvestorPayoutsForTime(INVESTOR_1, replenishTime);
+                    await timeTo(replenishTime);
 
-                await contract.replenish(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+                    await contract.replenish(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
 
+                    const userBalanceReplenished = await depositContracts.token.balanceOf(INVESTOR_1);
+                    const accountInfoReplenished = await contract.getAccountInfo(INVESTOR_1);
+                    const accountDepositReplenished = accountInfoReplenished[1];
+                    const vaultBalanceReplenished = await depositContracts.token.balanceOf(accountInfo[0]);
+                    const contractBalanceReplenished = await depositContracts.token.balanceOf(contract.address);
 
-                const userBalanceReplenished = await depositContracts.token.balanceOf(INVESTOR_1);
+                    userBalanceReplenished.should.be.bignumber.at.least(userBalance.add(payouts).sub(userAmountBN));
+                    accountDepositReplenished.should.be.bignumber.equals(accountDeposit.add(userAmountBN));
+                    vaultBalanceReplenished.should.be.bignumber.equals(vaultBalance.add(userAmountBN));
+                });
+            };
 
-                const accountInfoReplenished = await contract.getAccountInfo(INVESTOR_1);
-                const accountDepositReplenished = accountInfoReplenished[1];
-                
-                const vaultBalanceReplenished = await depositContracts.token.balanceOf(accountInfo[0]);
-                //vaultBalanceReplenished.should.be.bignumber.equals(vaultBalance + userAmountBN);
-                const contractBalanceReplenished = await depositContracts.token.balanceOf(contract.address);
-                console.log("-------");
-                console.log("After:");
-                console.info("account info:");
-                console.info(accountInfoReplenished);
-                console.info("user balance:");
-                console.log(userBalanceReplenished);
-                console.info("vault balance:");
-                console.log(vaultBalanceReplenished);
-                console.log("deposit contract balance:");
-                console.log(contractBalanceReplenished);
-                userBalanceReplenished.should.be.bignumber.equals(userBalance - userAmountBN);
-                accountDepositReplenished.should.be.bignumber.equals(accountInfoBN + userAmountBN);
-            });
 
             it('#2 check payout calculation', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -440,12 +427,11 @@ contract('DepositContract', accounts => {
                 payoutPercents.should.be.closeTo(Number(payoutsPerTime), DECIMALS);
             });
 
-            /*
             it('#3 check withdraw', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
-                const investAmount = Number(await contract.minInvestment());
-                console.log(investAmount);
+                const investAmountBN = await contract.minInvestment();
+                const investAmount = Number(investAmountBN);
 
                 await depositContracts.token.approve(contract.address, investAmount, {from: INVESTOR_1})
                     .should.be.fulfilled;
@@ -454,22 +440,21 @@ contract('DepositContract', accounts => {
 
                 const accountInfo = await contract.getAccountInfo(INVESTOR_1);
                 const accountEndTime = Number(accountInfo[3]);
-                const payoutsCalculated = await contract.calculateInvestorPayoutsForTime(INVESTOR_1, accountEndTime);
-                console.log(payoutsCalculated);
+                const payoutsCalculated = await contract.calculateInvestorPayoutsForTime(INVESTOR_1, accountEndTime + 10);
 
                 await timeTo(accountEndTime + 10);
                 const currentTime = await getBlockchainTimestamp();
                 Number(currentTime).should.be.greaterThan(accountEndTime);
 
                 const tokenBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
-                console.log(tokenBalanceBefore);
+
                 await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
                 const tokenBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
-                console.log(tokenBalanceAfter);
-                console.log(Number(tokenBalanceAfter) - Number(tokenBalanceBefore));
-                console.log(await depositContracts.token.balanceOf(contract.address));
+                const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
+                
+                tokenBalanceAfter.sub(tokenBalanceBefore).should.be.bignumber.at.least(payoutsCalculated.add(investAmountBN));
+                tokenSupplyBN.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated);
             });
-            */
 
             it('#4 check withdraw rejects if not enough time', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -483,13 +468,13 @@ contract('DepositContract', accounts => {
 
                 const currentTime = await getBlockchainTimestamp();
 
-                await timeTo(currentTime + 1000).should.be.fulfilled;
+                await timeTo(currentTime + DAY).should.be.fulfilled;
                 await contract.withdraw({from: INVESTOR_1}).should.be.rejected;
             });
         });
 
         describe('Events for deposit contract', async () =>{
-            it('#5 check add investor event', async () => {
+            it('#1 check add investor event', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
                 const investAmount = Number(await contract.minInvestment());
@@ -504,8 +489,7 @@ contract('DepositContract', accounts => {
                 //truffleAssert.prettyPrintEmittedEvents(txInvest);
             });
 
-            /*
-            it('#5 check remove investor event', async () => {
+            it('#2 check remove investor event', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
                 const investAmount = Number(await contract.minInvestment());
@@ -523,18 +507,65 @@ contract('DepositContract', accounts => {
                 truffleAssert.eventEmitted(txWithdraw, 'RemoveInvestor', (ev) => {
                     return ev._investor.should.be.equals(INVESTOR_1);
                 });
-                truffleAssert.prettyPrintEmittedEvents(txWithdraw);
+                //truffleAssert.prettyPrintEmittedEvents(txWithdraw);
             });
-            */
         });
+        
 
-        describe('Airdrop', async () => {
+        describe('Other methods', async () => {
             it('#0 check calling airdrop', async () => {
-            });
-        });
+                const depositContracts = await createDepositContracts(_contractPlan);
+                const contract = depositContracts.mainContract;
+                const investAmountBN = await contract.minInvestment();
+                const investAmount = Number(investAmountBN);
 
-        describe('Other functions', async () => {
-            it('#0 check transfer BFCL', async () => {
+                await depositContracts.whitelist.addAddressesToWhitelist(INVESTORS, {from: OWNER}).should.be.fulfilled;
+                
+                let depositTime = DAY * 15;
+                if (_contractPlan == "silver") {
+                    depositTime = SILVER_TIME;
+                } else if (_contractPlan == "gold") {
+                    depositTime = GOLD_TIME;
+                } else if (_contractPlan == "platinum") {
+                    depositTime = PLATINUM_TIME;
+                } else if (_contractPlan == "demo") {
+                    depositTime = TRY_AND_BUY_TIME;
+                };
+
+                const usersCount = INVESTORS.length;
+                let usersBalancesBefore = [];
+
+                for (let i = 0; i < usersCount; i++) {
+                    await depositContracts.token.approve(contract.address, investAmount, {from: INVESTORS[i]})
+                        .should.be.fulfilled;
+                    await contract.invest(investAmount, {from: INVESTORS[i]}).should.be.fulfilled;
+                    usersBalancesBefore.push(await depositContracts.token.balanceOf(INVESTORS[i]));
+                };
+                console.log("test")
+
+                const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, depositTime + 10);
+                console.log("test1")
+
+                await timeTo(depositTime + 10);
+                const currentTime = await getBlockchainTimestamp();
+                Number(currentTime).should.be.greaterThan(depositTime);
+                
+                await contract.airdrop(INVESTORS, {from: OWNER}).should.be.fulfilled;
+
+                const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
+                contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculted.mul(usersCount));
+
+                for (let i = 0; i < usersCount; i++) {
+                    const balanceAfter = await depositContracts.token.balanceOf(INVESTORS[i]);
+                    const balanceBefore = usersBalancesBefore[i];
+                    console.log(balanceBefore);
+                    console.log(balanceAfter);
+                    balanceAfter.sub(balanceBefore).should.be.bignumber.at.least(payoutsCalculated);
+                };
+
+            });
+
+            it('#2 check transfer BFCL', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
 
@@ -551,7 +582,7 @@ contract('DepositContract', accounts => {
                 userBalanceAfter.should.be.bignumber.gte(userBalance);
             });
 
-            it('#0 check transfer ERC20', async () => {
+            it('#3 check transfer ERC20', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
                 const token = depositContracts.token;
@@ -568,7 +599,6 @@ contract('DepositContract', accounts => {
                 const userBalance = new BigNumber(contractBalanceBefore.add(userBalanceBefore));
                 userBalanceAfter.should.be.bignumber.gte(userBalance);
             });
-
         });
     };
 
