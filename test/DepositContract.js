@@ -21,7 +21,7 @@ const TryAndBuy = artifacts.require('./TryAndBuyDepositPlan.sol');
 const DAY = 24 * 3600;
 const SILVER_TIME = DAY * 15;
 const GOLD_TIME = DAY * 365;
-const PLATINUM_TIME = DAY * 720
+const PLATINUM_TIME = DAY * 720;
 const TRY_AND_BUY_START = 1547510400;
 const TRY_AND_BUY_END = 1552608000;
 const TRY_AND_BUY_TIME = TRY_AND_BUY_END - TRY_AND_BUY_START;
@@ -72,7 +72,7 @@ contract('DepositContract', accounts => {
         tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(platinumContract.address));
         tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(demoContract.address));
         for (let i = 0; i < INVESTORS.length; i++) {
-            await token.mint(INVESTORS[i], simpleAmount, {from: OWNER}).should.be.fulfilled
+            await token.mint(INVESTORS[i], simpleAmount, {from: OWNER}).should.be.fulfilled;
             simpleAmountBN.should.be.bignumber.equals(await token.balanceOf(INVESTORS[i]));
         };
 
@@ -234,7 +234,7 @@ contract('DepositContract', accounts => {
             const token = await Token.new(OWNER, {from: OWNER});
             const vault = await Vault.new(OWNER, token.address, {from: OWNER});
             (await vault.investor()).should.be.equals(OWNER);
-        })
+        });
 
         it('#1 check vault accept tokens', async () => {
             const token = await Token.new(OWNER, {from: OWNER});
@@ -274,7 +274,6 @@ contract('DepositContract', accounts => {
             userBalanceAfter.should.be.bignumber.equals(simpleAmountBN);
         });
     });
-
 
 
     const depositContractTests = async (_contractPlan) => {
@@ -343,7 +342,7 @@ contract('DepositContract', accounts => {
                 const lastWithdrawTime = accountInfo[2];
                 const userEndTime = accountInfo[3];
                 Number(lastWithdrawTime).should.be.closeTo(currentTime, 10);
-                Number(userEndTime).should.be.closeTo(currentTime + Number(contractTime), 10)
+                Number(userEndTime).should.be.closeTo(currentTime + Number(contractTime), 10);
             });
 
             it('#6 check vault created and received tokens from deposit', async () => {
@@ -494,7 +493,7 @@ contract('DepositContract', accounts => {
                 await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
                 const tokenBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
-                
+
                 tokenBalanceAfter.sub(tokenBalanceBefore).should.be.bignumber.at.least(payoutsCalculated.add(investAmountBN));
                 tokenSupplyBN.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated);
             });
@@ -553,7 +552,7 @@ contract('DepositContract', accounts => {
                 //truffleAssert.prettyPrintEmittedEvents(txWithdraw);
             });
         });
-        
+
         describe('Other methods', async () => {
             it('#1 check calling airdrop', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -562,7 +561,7 @@ contract('DepositContract', accounts => {
                 const investAmount = Number(investAmountBN);
 
                 await depositContracts.whitelist.addAddressesToWhitelist(INVESTORS, {from: OWNER}).should.be.fulfilled;
-                
+
                 let depositTime = DAY * 15;
                 if (_contractPlan == "silver") {
                     depositTime = SILVER_TIME;
@@ -589,7 +588,7 @@ contract('DepositContract', accounts => {
                 const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, absoluteDepositTime + 10);
                 const contractBalanceBefore = await depositContracts.token.balanceOf(contract.address);
 
-                await timeTo(absoluteDepositTime + 10);                
+                await timeTo(absoluteDepositTime + 10);
                 await contract.airdrop(INVESTORS, {from: OWNER}).should.be.fulfilled;
 
                 const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
