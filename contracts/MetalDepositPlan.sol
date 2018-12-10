@@ -45,6 +45,7 @@ contract MetalDepositPlan is DepositPlan {
     }
 
     _sendPayouts(investor);
+    bfclToken.transferFrom(investor, account.vault, _tokenAmount);
     account.deposit = account.deposit.add(_tokenAmount);
 
     if (now >= account.depositEndTime) {

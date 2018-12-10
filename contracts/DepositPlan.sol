@@ -223,8 +223,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
   {
     uint dividends;
     if (!_account.isClosed) {
-      uint percentPerSecond = depositPercentPerDay.mul(1 days);
-      dividends = _account.deposit.mul(_period).mul(percentPerSecond).div(10000);
+      dividends = _account.deposit.mul(_period).mul(depositPercentPerDay).div(10000).div(1 days);
     }
     return dividends.add(_account.debt);
   }

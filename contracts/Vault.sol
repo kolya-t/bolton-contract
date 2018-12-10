@@ -31,6 +31,6 @@ contract Vault is Ownable {
   }
 
   function getBalance() external view returns (uint) {
-    return bfclToken.balanceOf(investor);
+    return bfclToken.balanceOf(address(this));
   }
 }
