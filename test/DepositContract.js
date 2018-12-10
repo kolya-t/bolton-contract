@@ -245,7 +245,6 @@ contract('DepositContract', accounts => {
             vaultBalance.should.be.bignumber.equals(simpleAmountBN);
         });
 
-        /*
         it('#2 check vault shows balance', async () => {
             const token = await Token.new(OWNER, {from: OWNER});
             const vault = await Vault.new(OWNER, token.address, {from: OWNER});
@@ -255,9 +254,8 @@ contract('DepositContract', accounts => {
             vaultBalance.should.be.bignumber.equals(simpleAmountBN);
 
             const vaultInternalBalance = await vault.getBalance();
-            console.log(vaultInternalBalance);
+            vaultInternalBalance.should.be.bignumber.equals(simpleAmountBN);
         });
-        */
 
         it('#3 check vault rejects ETH', async () => {
             const token = await Token.new(OWNER, {from: OWNER});
@@ -317,7 +315,6 @@ contract('DepositContract', accounts => {
             it('#4 check reverts if invest called twice', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
-                //const minAmount = Number(await contract.minInvestment()) + ETH;
                 await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
                 await depositContracts.token.approve(contract.address, simpleAmount, {from: INVESTOR_1})
                     .should.be.fulfilled;
@@ -363,7 +360,6 @@ contract('DepositContract', accounts => {
         });
 
         describe('Calculations and repay', async () =>{
-            /*
             it('#1 check replenish', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
@@ -394,10 +390,10 @@ contract('DepositContract', accounts => {
 
 
                 const userBalanceReplenished = await depositContracts.token.balanceOf(INVESTOR_1);
-                //userBalanceReplenished.should.be.bignumber.equals(userBalance - userAmountBN);
+
                 const accountInfoReplenished = await contract.getAccountInfo(INVESTOR_1);
                 const accountDepositReplenished = accountInfoReplenished[1];
-                //accountDepositReplenished.should.be.bignumber.equals(accountInfoBN + userAmountBN);
+                
                 const vaultBalanceReplenished = await depositContracts.token.balanceOf(accountInfo[0]);
                 //vaultBalanceReplenished.should.be.bignumber.equals(vaultBalance + userAmountBN);
                 const contractBalanceReplenished = await depositContracts.token.balanceOf(contract.address);
@@ -411,8 +407,9 @@ contract('DepositContract', accounts => {
                 console.log(vaultBalanceReplenished);
                 console.log("deposit contract balance:");
                 console.log(contractBalanceReplenished);
+                userBalanceReplenished.should.be.bignumber.equals(userBalance - userAmountBN);
+                accountDepositReplenished.should.be.bignumber.equals(accountInfoBN + userAmountBN);
             });
-            */
 
             it('#2 check payout calculation', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
