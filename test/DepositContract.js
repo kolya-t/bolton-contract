@@ -57,7 +57,7 @@ contract('DepositContract', accounts => {
         const goldContract = await Gold.new(token.address, whitelist.address, {from: OWNER});
         const platinumContract = await Platinum.new(token.address, whitelist.address, {from: OWNER});
         const demoContract = await TryAndBuy.new(token.address, whitelist.address, {from: OWNER});
-        
+
         await token.mint(OWNER, 4 * tokenSupply, {from: OWNER}).should.be.fulfilled;
         await token.transfer(silverContract.address, tokenSupply, {from: OWNER})
             .should.be.fulfilled;
@@ -235,7 +235,7 @@ contract('DepositContract', accounts => {
             const vault = await Vault.new(OWNER, token.address, {from: OWNER});
             (await vault.investor()).should.be.equals(OWNER);
         })
-        
+
         it('#1 check vault accept tokens', async () => {
             const token = await Token.new(OWNER, {from: OWNER});
             const vault = await Vault.new(OWNER, token.address, {from: OWNER});
@@ -324,7 +324,7 @@ contract('DepositContract', accounts => {
                 await contract.invest(simpleAmount, {from: INVESTOR_1}).should.be.fulfilled;
                 await contract.invest(simpleAmount, {from: INVESTOR_1}).should.not.be.fulfilled;
 
-            });    
+            });
 
             it('#5 check time is tracking', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
@@ -373,7 +373,7 @@ contract('DepositContract', accounts => {
                 await contract.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
 
                 const accountInfo = await contract.getAccountInfo(INVESTOR_1);
-                const accountDeposit = accountInfo[1];        
+                const accountDeposit = accountInfo[1];
                 const vaultBalance = await depositContracts.token.balanceOf(accountInfo[0]);
                 const userBalance = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalance = await depositContracts.token.balanceOf(contract.address);
@@ -386,13 +386,13 @@ contract('DepositContract', accounts => {
                 console.log(vaultBalance);
                 console.log("deposit contract balance");
                 console.log(contractBalance);
-                
+
                 const currentTime = await getBlockchainTimestamp();
                 await timeTo(currentTime + DAY);
 
                 await contract.replenish(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
 
-                
+
                 const userBalanceReplenished = await depositContracts.token.balanceOf(INVESTOR_1);
                 //userBalanceReplenished.should.be.bignumber.equals(userBalance - userAmountBN);
                 const accountInfoReplenished = await contract.getAccountInfo(INVESTOR_1);
@@ -419,7 +419,7 @@ contract('DepositContract', accounts => {
                 const contract = depositContracts.mainContract;
                 const percentage = await contract.depositPercentPerDay();
                 const minAmount = Number(await contract.minInvestment());
-                
+
                 await depositContracts.token.approve(contract.address, minAmount, {from: INVESTOR_1})
                     .should.be.fulfilled;
                 await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
@@ -439,7 +439,7 @@ contract('DepositContract', accounts => {
                 const currentTime = await getBlockchainTimestamp();
                 const afterTime = currentTime + depositTime;
                 const payoutsPerTime = await contract.calculateInvestorPayoutsForTime(INVESTOR_1, afterTime);
-                const payoutPercents = (minAmount * depositTime * (Number(percentage) * DAY)) / 10000;
+                const payoutPercents = (minAmount * depositTime * (Number(percentage))) / 10000 / DAY;
                 payoutPercents.should.be.closeTo(Number(payoutsPerTime), DECIMALS);
             });
 
@@ -449,21 +449,21 @@ contract('DepositContract', accounts => {
                 const contract = depositContracts.mainContract;
                 const investAmount = Number(await contract.minInvestment());
                 console.log(investAmount);
-                
+
                 await depositContracts.token.approve(contract.address, investAmount, {from: INVESTOR_1})
                     .should.be.fulfilled;
                 await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
                 await contract.invest(investAmount, {from: INVESTOR_1}).should.be.fulfilled;
 
                 const accountInfo = await contract.getAccountInfo(INVESTOR_1);
-                const accountEndTime = accountInfo[3];
+                const accountEndTime = Number(accountInfo[3]);
                 const payoutsCalculated = await contract.calculateInvestorPayoutsForTime(INVESTOR_1, accountEndTime);
                 console.log(payoutsCalculated);
 
                 await timeTo(accountEndTime + 10);
                 const currentTime = await getBlockchainTimestamp();
-                Number(currentTime).should.be.greaterThan(Number(accountEndTime));
-                
+                Number(currentTime).should.be.greaterThan(accountEndTime);
+
                 const tokenBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
                 console.log(tokenBalanceBefore);
                 await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
@@ -483,7 +483,7 @@ contract('DepositContract', accounts => {
                     .should.be.fulfilled;
                 await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
                 await contract.invest(investAmount, {from: INVESTOR_1}).should.be.fulfilled;
-            
+
                 const currentTime = await getBlockchainTimestamp();
 
                 await timeTo(currentTime + 1000).should.be.fulfilled;
@@ -517,11 +517,11 @@ contract('DepositContract', accounts => {
                     .should.be.fulfilled;
                 await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
                 await contract.invest(investAmount, {from: INVESTOR_1}).should.be.fulfilled;
-                
-                const accountEndTime = (await contract.getAccountInfo(INVESTOR_1))[3];
+
+                const accountEndTime = Number((await contract.getAccountInfo(INVESTOR_1))[3]);
                 await timeTo(accountEndTime + 10);
-                
-                const txWithdraw = await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled; 
+
+                const txWithdraw = await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
 
                 truffleAssert.eventEmitted(txWithdraw, 'RemoveInvestor', (ev) => {
                     return ev._investor.should.be.equals(INVESTOR_1);
@@ -546,7 +546,7 @@ contract('DepositContract', accounts => {
                 await contract.transferBfcl(INVESTOR_1, tokenSupply, {from: OWNER}).should.be.fulfilled;
                 const userBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
-                
+
                 contractBalanceAfter.should.be.bignumber.lessThan(contractBalanceBefore);
                 contractBalanceAfter.should.be.zero;
 
@@ -564,7 +564,7 @@ contract('DepositContract', accounts => {
                 await contract.transferErc20(token.address, INVESTOR_1, tokenSupply, {from: OWNER}).should.be.fulfilled;
                 const userBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
-                
+
                 contractBalanceAfter.should.be.bignumber.lessThan(contractBalanceBefore);
                 contractBalanceAfter.should.be.zero;
 
@@ -586,7 +586,7 @@ contract('DepositContract', accounts => {
     describe('Platinum Deposit Plan', async () => {
         await depositContractTests("platinum");
     });
-    
+
     describe('Try And Buy Deposit Plan', async () => {
         await depositContractTests("demo");
     });
