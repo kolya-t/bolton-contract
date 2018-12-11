@@ -10,7 +10,7 @@ contract Whitelist is Ownable {
   Roles.Role private whitelist;
 
   event WhitelistedAddressAdded(address indexed _address);
-  event WhitelistedAddressRemoved(address indexed _address);
+  //event WhitelistedAddressRemoved(address indexed _address);
 
   function isWhitelisted(address _address) public view returns (bool) {
     return whitelist.has(_address);
@@ -26,6 +26,7 @@ contract Whitelist is Ownable {
     }
   }
 
+  /***
   function removeAddressFromWhitelist(address _address) external onlyOwner {
     _removeAddressFromWhitelist(_address);
   }
@@ -35,14 +36,17 @@ contract Whitelist is Ownable {
       _removeAddressFromWhitelist(_addresses[i]);
     }
   }
+  ***/
 
   function _addAddressToWhitelist(address _address) internal {
     whitelist.add(_address);
     emit WhitelistedAddressAdded(_address);
   }
 
+  /***
   function _removeAddressFromWhitelist(address _address) internal {
     whitelist.remove(_address);
     emit WhitelistedAddressRemoved(_address);
   }
+  ***/
 }

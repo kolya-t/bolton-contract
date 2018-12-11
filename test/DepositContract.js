@@ -169,6 +169,7 @@ contract('DepositContract', accounts => {
             }
         });
 
+        /***
         it('#4 check remove from whitelist', async () => {
             const depositContracts = await createDepositContracts();
             const whitelist = depositContracts.whitelist;
@@ -190,6 +191,7 @@ contract('DepositContract', accounts => {
                 (await whitelist.isWhitelisted(INVESTORS[i])).should.be.false;
             }
         });
+        ***/
 
         it('#6 check add events', async () => {
             const depositContracts = await createDepositContracts();
@@ -201,6 +203,7 @@ contract('DepositContract', accounts => {
             //truffleAssert.prettyPrintEmittedEvents(txAdd);
         });
 
+        /***
         it('#7 check remove events', async () => {
             const depositContracts = await createDepositContracts();
             const whitelist = depositContracts.whitelist;
@@ -211,6 +214,7 @@ contract('DepositContract', accounts => {
             });
             //truffleAssert.prettyPrintEmittedEvents(txRemove);
         });
+        ***/
 
         it('#8 check cannot be added twice', async () => {
             const depositContracts = await createDepositContracts();
@@ -219,6 +223,7 @@ contract('DepositContract', accounts => {
             await whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.not.be.fulfilled;
         });
 
+        /***
         it('#9 check cannot be removed twice', async () => {
             const depositContracts = await createDepositContracts();
             const whitelist = depositContracts.whitelist;
@@ -227,6 +232,7 @@ contract('DepositContract', accounts => {
             await whitelist.removeAddressFromWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
             await whitelist.removeAddressFromWhitelist(INVESTOR_1, {from: OWNER}).should.not.be.fulfilled;
         });
+        ***/
     });
 
     describe('Vault', async () =>{
