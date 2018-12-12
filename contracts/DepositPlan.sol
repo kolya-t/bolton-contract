@@ -151,7 +151,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     view
     returns (uint)
   {
-    return bfclToken.balanceOf(address(this));
+    return bfclToken.allowance(tokensWallet, address(this));
   }
 
   function calculateInvestorPayoutsForTime(
