@@ -17,6 +17,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
   Whitelist public whitelist;
   uint public depositPercentPerDay;
   uint public minInvestment;
+  address public tokensWallet;
 
   mapping (address => Account) public accounts;
 
@@ -33,12 +34,14 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     IERC20 _bfclToken,
     Whitelist _whitelist,
     uint _depositPercentPerDay, // ex. 10 for 0.10%, 16 for 0.16%
-    uint _minInvestment // 10000000000000000000 for 10 BFCL
+    uint _minInvestment, // 10000000000000000000 for 10 BFCL
+    address _tokensWallet
   ) public {
     bfclToken = _bfclToken;
     whitelist = _whitelist;
     depositPercentPerDay = _depositPercentPerDay;
     minInvestment = _minInvestment;
+    tokensWallet = _tokensWallet;
   }
 
   modifier onlyIfWhitelisted() {
@@ -196,7 +199,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
       }
 
       if (canPay > 0) {
-        bfclToken.transfer(_investor, canPay);
+        bfclToken.transferFrom(tokensWallet, _investor, canPay);
       }
     }
   }

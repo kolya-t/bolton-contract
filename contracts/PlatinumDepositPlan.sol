@@ -6,14 +6,16 @@ import "./MetalDepositPlan.sol";
 contract PlatinumDepositPlan is MetalDepositPlan {
   constructor(
     IERC20 _bfclToken,
-    Whitelist _whitelist
+    Whitelist _whitelist,
+    address _tokensWallet
   )
     MetalDepositPlan(
       _bfclToken,
       _whitelist,
       730 days,
       16,
-      5000000000000000000000
+      5000000000000000000000,
+      _tokensWallet
     )
     public
   {

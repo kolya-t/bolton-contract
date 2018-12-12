@@ -11,13 +11,15 @@ contract MetalDepositPlan is DepositPlan {
     Whitelist _whitelist,
     uint _depositTime,
     uint _depositPercentPerDay,
-    uint _minInvestment
+    uint _minInvestment,
+    address _tokensWallet
   )
     DepositPlan(
       _bfclToken,
       _whitelist,
       _depositPercentPerDay,
-      _minInvestment
+      _minInvestment,
+      _tokensWallet
     )
     public
   {

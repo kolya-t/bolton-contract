@@ -10,13 +10,15 @@ contract TryAndBuyDepositPlan is DepositPlan {
 
   constructor(
     IERC20 _bfclToken,
-    Whitelist _whitelist
+    Whitelist _whitelist,
+    address _tokensWallet
   )
     DepositPlan(
       _bfclToken,
       _whitelist,
       16,
-      10000000000000000000
+      10000000000000000000,
+      _tokensWallet
     )
     public
   {
