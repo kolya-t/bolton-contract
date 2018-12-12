@@ -40,8 +40,10 @@ const userAmountBN = new BigNumber(userAmount);
 
 contract('DepositContract', accounts => {
     const OWNER = accounts[1];
-    const INVESTORS = [accounts[2], accounts[3], accounts[4]];
-    const INVESTOR_1 = accounts[2];
+    const TOKEN_WALLET = accounts[2];
+    const INVESTORS = [accounts[3], accounts[4], accounts[5]];
+    const INVESTOR_1 = accounts[3];
+
 
     let snapshotId;
 
@@ -53,24 +55,24 @@ contract('DepositContract', accounts => {
     const createDepositContracts = async (_contractPlan) => {
         const token = await Token.new({from: OWNER});
         const whitelist = await Whitelist.new(token.address, {from: OWNER});
-        const silverContract = await Silver.new(token.address, whitelist.address, {from: OWNER});
-        const goldContract = await Gold.new(token.address, whitelist.address, {from: OWNER});
-        const platinumContract = await Platinum.new(token.address, whitelist.address, {from: OWNER});
-        const demoContract = await TryAndBuy.new(token.address, whitelist.address, {from: OWNER});
+        const silverContract = await Silver.new(token.address, whitelist.address, TOKEN_WALLET, {from: OWNER});
+        const goldContract = await Gold.new(token.address, whitelist.address, TOKEN_WALLET, {from: OWNER});
+        const platinumContract = await Platinum.new(token.address, whitelist.address, TOKEN_WALLET, {from: OWNER});
+        const demoContract = await TryAndBuy.new(token.address, whitelist.address, TOKEN_WALLET, {from: OWNER});
 
-        await token.mint(OWNER, 4 * tokenSupply, {from: OWNER}).should.be.fulfilled;
-        await token.transfer(silverContract.address, tokenSupply, {from: OWNER})
+        await token.mint(TOKEN_WALLET, 4 * tokenSupply, {from: OWNER}).should.be.fulfilled;
+        await token.approve(silverContract.address, tokenSupply, {from: TOKEN_WALLET})
             .should.be.fulfilled;
-        await token.transfer(goldContract.address, tokenSupply, {from: OWNER})
+        await token.approve(goldContract.address, tokenSupply, {from: TOKEN_WALLET})
             .should.be.fulfilled;
-        await token.transfer(platinumContract.address, tokenSupply, {from: OWNER})
+        await token.approve(platinumContract.address, tokenSupply, {from: TOKEN_WALLET})
             .should.be.fulfilled;
-        await token.transfer(demoContract.address, tokenSupply, {from: OWNER})
+        await token.approve(demoContract.address, tokenSupply, {from: TOKEN_WALLET})
             .should.be.fulfilled;
-        tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(silverContract.address));
-        tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(goldContract.address));
-        tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(platinumContract.address));
-        tokenSupplyBN.should.be.bignumber.equals(await token.balanceOf(demoContract.address));
+        tokenSupplyBN.should.be.bignumber.equals(await token.allowance(TOKEN_WALLET, silverContract.address));
+        tokenSupplyBN.should.be.bignumber.equals(await token.allowance(TOKEN_WALLET, goldContract.address));
+        tokenSupplyBN.should.be.bignumber.equals(await token.allowance(TOKEN_WALLET, platinumContract.address));
+        tokenSupplyBN.should.be.bignumber.equals(await token.allowance(TOKEN_WALLET, demoContract.address));
         for (let i = 0; i < INVESTORS.length; i++) {
             await token.mint(INVESTORS[i], simpleAmount, {from: OWNER}).should.be.fulfilled;
             simpleAmountBN.should.be.bignumber.equals(await token.balanceOf(INVESTORS[i]));
@@ -437,7 +439,7 @@ contract('DepositContract', accounts => {
                     const accountInfoReplenished = await contract.getAccountInfo(INVESTOR_1);
                     const accountDepositReplenished = accountInfoReplenished[1];
                     const vaultBalanceReplenished = await depositContracts.token.balanceOf(accountInfo[0]);
-                    const contractBalanceReplenished = await depositContracts.token.balanceOf(contract.address);
+                    const contractBalanceReplenished = await depositContracts.token.balanceOf(TOKEN_WALLET);
 
                     userBalanceReplenished.should.be.bignumber.at.least(userBalance.add(payouts).sub(userAmountBN));
                     accountDepositReplenished.should.be.bignumber.equals(accountDeposit.add(userAmountBN));
@@ -498,10 +500,8 @@ contract('DepositContract', accounts => {
 
                 await contract.withdraw({from: INVESTOR_1}).should.be.fulfilled;
                 const tokenBalanceAfter = await depositContracts.token.balanceOf(INVESTOR_1);
-                const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
 
                 tokenBalanceAfter.sub(tokenBalanceBefore).should.be.bignumber.at.least(payoutsCalculated.add(investAmountBN));
-                tokenSupplyBN.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated);
             });
 
             it('#4 check withdraw rejects if not enough time', async () => {
@@ -592,12 +592,12 @@ contract('DepositContract', accounts => {
                 };
 
                 const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, absoluteDepositTime + 10);
-                const contractBalanceBefore = await depositContracts.token.balanceOf(contract.address);
+                const contractBalanceBefore = await depositContracts.token.balanceOf(TOKEN_WALLET);
 
                 await timeTo(absoluteDepositTime + 10);
                 await contract.airdrop(INVESTORS, {from: OWNER}).should.be.fulfilled;
 
-                const contractBalanceAfter = await depositContracts.token.balanceOf(contract.address);
+                const contractBalanceAfter = await depositContracts.token.balanceOf(TOKEN_WALLET);
                 contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated.mul(usersCount));
 
                 for (let i = 0; i < usersCount; i++) {
@@ -610,6 +610,7 @@ contract('DepositContract', accounts => {
             it('#2 check transfer BFCL', async () => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
+                await depositContracts.token.mint(contract.address, tokenSupply, {from: OWNER}).should.be.fulfilled;
 
                 const userBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalanceBefore = await depositContracts.token.balanceOf(contract.address);
@@ -628,6 +629,7 @@ contract('DepositContract', accounts => {
                 const depositContracts = await createDepositContracts(_contractPlan);
                 const contract = depositContracts.mainContract;
                 const token = depositContracts.token;
+                await token.mint(contract.address, tokenSupply, {from: OWNER}).should.be.fulfilled;                
 
                 const userBalanceBefore = await depositContracts.token.balanceOf(INVESTOR_1);
                 const contractBalanceBefore = await depositContracts.token.balanceOf(contract.address);
