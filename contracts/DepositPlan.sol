@@ -181,6 +181,7 @@ contract DepositPlan is Ownable, ReentrancyGuard {
       Account storage account = accounts[_investors[i]];
       payouts = payouts.add(_calculateAccountPayoutsForTime(account, _timestamp));
     }
+    return payouts;
   }
 
   function _sendPayouts(address _investor) internal {
