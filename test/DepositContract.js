@@ -445,6 +445,17 @@ contract('DepositContract', accounts => {
                     accountDepositReplenished.should.be.bignumber.equals(accountDeposit.add(userAmountBN));
                     vaultBalanceReplenished.should.be.bignumber.equals(vaultBalance.add(userAmountBN));
                 });
+
+                it('#2 check reverts if replenish amount is less than minimal', async () => {
+                    const depositContracts = await createDepositContracts(_contractPlan);
+                    const contract = depositContracts.mainContract;
+                    await depositContracts.whitelist.addAddressToWhitelist(INVESTOR_1, {from: OWNER}).should.be.fulfilled;
+                    await depositContracts.token.approve(contract.address, simpleAmount, {from: INVESTOR_1})
+                        .should.be.fulfilled;
+                    await contract.invest(userAmount, {from: INVESTOR_1}).should.be.fulfilled;
+                    await timeTo(await getBlockchainTimestamp() + DAY);
+                    await contract.replenish(ETH, {from: INVESTOR_1}).should.not.be.fulfilled;
+            });
             };
 
 

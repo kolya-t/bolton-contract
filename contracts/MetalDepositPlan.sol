@@ -46,6 +46,8 @@ contract MetalDepositPlan is DepositPlan {
       revert();
     }
 
+    require(_tokenAmount >= minInvestment);
+
     _sendPayouts(investor);
     bfclToken.transferFrom(investor, account.vault, _tokenAmount);
     account.deposit = account.deposit.add(_tokenAmount);
