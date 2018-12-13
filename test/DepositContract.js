@@ -603,18 +603,23 @@ contract('DepositContract', accounts => {
                 };
 
                 const payoutsCalculated = await contract.calculatePayoutsForTime(INVESTORS, absoluteDepositTime + 10);
+
+                const payoutsPerUser = []
+                for (let i = 0; i < usersCount; i++) {
+                    payoutsPerUser.push(await contract.calculateInvestorPayoutsForTime(INVESTORS[i], absoluteDepositTime +10))
+                };
                 const contractBalanceBefore = await depositContracts.token.balanceOf(TOKEN_WALLET);
 
                 await timeTo(absoluteDepositTime + 10);
                 await contract.airdrop(INVESTORS, {from: OWNER}).should.be.fulfilled;
 
                 const contractBalanceAfter = await depositContracts.token.balanceOf(TOKEN_WALLET);
-                contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated.mul(usersCount));
+                contractBalanceBefore.sub(contractBalanceAfter).should.be.bignumber.at.least(payoutsCalculated);
 
                 for (let i = 0; i < usersCount; i++) {
                     const balanceAfter = await depositContracts.token.balanceOf(INVESTORS[i]);
                     const balanceBefore = usersBalancesBefore[i];
-                    balanceAfter.sub(balanceBefore).should.be.bignumber.at.least(payoutsCalculated);
+                    balanceAfter.sub(balanceBefore).should.be.bignumber.at.least(payoutsPerUser[i]);
                 };
             });
 
