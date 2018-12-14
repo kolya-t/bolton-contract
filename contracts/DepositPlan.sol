@@ -129,15 +129,26 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     for (uint i = 0; i < _investors.length; i++) {
       address investor = _investors[i];
       _sendPayouts(investor);
+
+      Account storage account = accounts[investor];
+      if (account.isClosed && account.debt == 0) {
+        delete accounts[investor];
+        emit RemoveInvestor(investor);
+      }
     }
   }
 
   function withdraw() external {
     address investor = msg.sender;
     Account storage account = accounts[investor];
+
+    require(!account.isClosed);
     require(now >= account.depositEndTime);
+
     _sendPayouts(investor);
     account.vault.withdrawToInvestor(account.deposit);
+    account.deposit = 0;
+
     if (account.debt == 0) {
       delete accounts[investor];
       emit RemoveInvestor(investor);
@@ -189,21 +200,23 @@ contract DepositPlan is Ownable, ReentrancyGuard {
     uint mustPay = _calculateAccountPayoutsForTime(account, now);
     account.lastWithdrawTime = now;
 
-    if (mustPay > 0) {
-      uint balance = getBalance();
-      uint canPay;
+    if (mustPay == 0) {
+      return;
+    }
 
-      if (balance >= mustPay) {
-        account.debt = 0;
-        canPay = mustPay;
-      } else {
-        account.debt = mustPay.sub(balance);
-        canPay = balance;
-      }
+    uint balance = getBalance();
+    uint canPay;
 
-      if (canPay > 0) {
-        bfclToken.transferFrom(tokensWallet, _investor, canPay);
-      }
+    if (balance >= mustPay) {
+      account.debt = 0;
+      canPay = mustPay;
+    } else {
+      account.debt = mustPay.sub(balance);
+      canPay = balance;
+    }
+
+    if (canPay > 0) {
+      bfclToken.transferFrom(tokensWallet, _investor, canPay);
     }
   }
 
