@@ -5,8 +5,8 @@ import "./DepositPlan.sol";
 
 contract TryAndBuyDepositPlan is DepositPlan {
   uint public constant maxInvestment = 1000000000000000000000; // 1000 BFCL
-  uint public constant startTime = 1547510400; // Jan 15 2019 00:00:00 UTC
-  uint public constant stopTime = 1552608000; // Mar 15 2019 23:59:59 UTC
+  uint public constant startTime = 1546300800; // Jan 01 2019 00:00:00 UTC
+  uint public constant stopTime = 1551398399; // Feb 28 2019 23:59:59 UTC
 
   constructor(
     IERC20 _bfclToken,
