@@ -350,7 +350,7 @@ contract('DepositContract', accounts => {
                 const lastWithdrawTime = accountInfo[2];
                 const userEndTime = accountInfo[3];
                 Number(lastWithdrawTime).should.be.closeTo(currentTime, 10);
-                Number(userEndTime).should.be.closeTo(currentTime + Number(contractTime), 10);
+                Number(userEndTime).should.be.closeTo(currentTime + Number(contractTime), 1000);
             });
 
             it('#6 check vault created and received tokens from deposit', async () => {
