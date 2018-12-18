@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./DepositPlan.sol";
+import "openzeppelin-solidity/contracts/math/Math.sol";
 
 
 contract TryAndBuyDepositPlan is DepositPlan {
@@ -42,8 +43,13 @@ contract TryAndBuyDepositPlan is DepositPlan {
     view
     returns (uint)
   {
-    _timestamp = _timestamp < stopTime ? _timestamp : stopTime;
-    uint period = _timestamp.sub(_account.lastWithdrawTime);
+    uint period;
+    if (_timestamp > stopTime && _account.lastWithdrawTime > stopTime) {
+      period = 0;
+    } else {
+      period = Math.min(_timestamp, stopTime);
+    }
+
     return _calculateAccountPayoutsForPeriod(_account, period);
   }
 }
