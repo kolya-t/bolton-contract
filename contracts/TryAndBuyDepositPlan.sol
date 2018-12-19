@@ -32,6 +32,7 @@ contract TryAndBuyDepositPlan is DepositPlan {
   {
     require(now >= startTime);
     require(now <= stopTime);
+    require(_tokenAmount <= maxInvestment);
     _invest(_tokenAmount, stopTime);
   }
 
