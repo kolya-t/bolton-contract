@@ -48,7 +48,7 @@ contract TryAndBuyDepositPlan is DepositPlan {
     if (_timestamp > stopTime && _account.lastWithdrawTime > stopTime) {
       period = 0;
     } else {
-      period = Math.min(_timestamp, stopTime);
+      period = Math.min(_timestamp, stopTime).sub(_account.lastWithdrawTime);
     }
 
     return _calculateAccountPayoutsForPeriod(_account, period);
