@@ -5,6 +5,7 @@ import "./DepositPlan.sol";
 
 contract MetalDepositPlan is DepositPlan {
   uint public depositTime;
+  uint public constant minReplenishment = 240000000000000000000;
 
   constructor(
     IERC20 _bfclToken,
@@ -46,7 +47,7 @@ contract MetalDepositPlan is DepositPlan {
       revert();
     }
 
-    require(_tokenAmount >= minInvestment);
+    require(_tokenAmount >= minReplenishment);
 
     _sendPayouts(investor);
     bfclToken.transferFrom(investor, account.vault, _tokenAmount);
