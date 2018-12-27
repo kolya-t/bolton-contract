@@ -8,13 +8,14 @@ const TryAndBuy = artifacts.require('./TryAndBuyDepositPlan.sol');
 
 module.exports = function (deployer, network, accounts) {
     const token = {address: '0x1acd824d94cae446520dc8e45559c2970acdf452'};
+    const wallet = {address: '0xAAAEe6d50fFF58291Aef789a04c907E27f07bc6f'};
 
     deployer.deploy(MetalWhitelist).then(whitelist => {
-        return deployer.deploy(Silver, token.address, whitelist.address, accounts[0])
-            .then(_ => deployer.deploy(Gold, token.address, whitelist.address, accounts[0]))
-            .then(_ => deployer.deploy(Platinum, token.address, whitelist.address, accounts[0]));
+        return deployer.deploy(Silver, token.address, whitelist.address, wallet.address)
+            .then(_ => deployer.deploy(Gold, token.address, whitelist.address, wallet.address))
+            .then(_ => deployer.deploy(Platinum, token.address, whitelist.address, wallet.address));
     }).then(_ => {
         return deployer.deploy(TryAndBuyWhitelist)
-            .then(whitelist => deployer.deploy(TryAndBuy, token.address, whitelist.address, accounts[0]));
+            .then(whitelist => deployer.deploy(TryAndBuy, token.address, whitelist.address, wallet.address));
     })
 };
